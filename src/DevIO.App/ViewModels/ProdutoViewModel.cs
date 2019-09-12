@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,6 +15,10 @@ namespace DevIO.App.ViewModels
         public Guid Id { get; set; }
 
         [Required(ErrorMessage = "O campo {0} é obrigatório")]
+        [DisplayName("Fornecedor")]
+        public Guid FornecedorId { get; set; } //para gerar o drop down list
+
+        [Required(ErrorMessage = "O campo {0} é obrigatório")]
         [StringLength(200, ErrorMessage ="O Campo {0} precisa ter entre {2} e {1} caracteres", MinimumLength = 2)]
         public string Nome { get; set; }
 
@@ -23,7 +28,7 @@ namespace DevIO.App.ViewModels
         public string Descricao { get; set; }
 
         //upload de imagem não pode ser do tipo string
-        public IFormFile ImagemUpload { get; set; }
+        //public IFormFile ImagemUpload { get; set; }
 
         //mas não podemos perder o campo Imagem (string)
         public string Imagem { get; set; }
@@ -36,6 +41,7 @@ namespace DevIO.App.ViewModels
 
         [DisplayName("Ativo?")]
         public bool Ativo { get; set; }
+
         public FornecedorViewModel Fornecedor { get; set; }
     }
 }
