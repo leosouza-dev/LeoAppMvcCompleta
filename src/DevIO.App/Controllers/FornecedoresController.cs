@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using DevIO.App.Data;
 using DevIO.App.ViewModels;
-using DevIO.Data.Repository;
 using DevIO.Business.Interfaces;
 using AutoMapper;
+using DevIO.Business.Models;
 
 namespace DevIO.App.Controllers
 {
-    public class FornecedoresController : Controller
+    public class FornecedoresController : BaseController
     {
         private readonly IFornecedorRepository _fornecedorRepository;
         private readonly IMapper _mapper;
@@ -32,7 +28,8 @@ namespace DevIO.App.Controllers
 
             //return View(await _fornecedorRepository.ObterTodos()); //alterar para o código comentado
 
-            //fazemos a conversão com AutoMapper
+            //fazemos a conversão com AutoMapper 
+            //A busca no _fornecedorRepository recebemos uma lista de Fornecedores, mas na View Index trabalhamos com uma lista de FornecedorViewModel
             return View(_mapper.Map<IEnumerable<FornecedorViewModel>>( await _fornecedorRepository.ObterTodos())); 
         }
 
@@ -62,27 +59,23 @@ namespace DevIO.App.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nome,Documento,TipoFornecedor,Ativo")] FornecedorViewModel fornecedorViewModel)
+        public async Task<IActionResult> Create(FornecedorViewModel fornecedorViewModel)
         {
             if (ModelState.IsValid)
             {
-                //fornecedorViewModel.Id = Guid.NewGuid();
-                _context.Add(fornecedorViewModel);
-                await _context.SaveChangesAsync();
+                var fornecedor = _mapper.Map<Fornecedor>(fornecedorViewModel);
+                await _fornecedorRepository.Adicionar(fornecedor);
+                //await _fornecedorRepository.SaveChanges();
                 return RedirectToAction(nameof(Index));
             }
             return View(fornecedorViewModel);
         }
 
         // GET: Fornecedores/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        //colocar o endereço + lista de produtos
+        public async Task<IActionResult> Edit(Guid id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var fornecedorViewModel = await _context.FornecedorViewModel.FindAsync(id);
+            var fornecedorViewModel = await ObterFornecedorProdutosEndereco(id);
             if (fornecedorViewModel == null)
             {
                 return NotFound();
@@ -95,51 +88,25 @@ namespace DevIO.App.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, [Bind("Id,Nome,Documento,TipoFornecedor,Ativo")] FornecedorViewModel fornecedorViewModel)
+        public async Task<IActionResult> Edit(Guid id, FornecedorViewModel fornecedorViewModel)
         {
-            if (id != fornecedorViewModel.Id)
-            {
-                return NotFound();
-            }
+            if (id != fornecedorViewModel.Id) return NotFound();
 
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(fornecedorViewModel);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!FornecedorViewModelExists(fornecedorViewModel.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            return View(fornecedorViewModel);
+            if (!ModelState.IsValid) return View(fornecedorViewModel);
+
+            var fornecedor = _mapper.Map<Fornecedor>(fornecedorViewModel);
+            await _fornecedorRepository.Atualizar(fornecedor);
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: Fornecedores/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        public async Task<IActionResult> Delete(Guid id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            var fornecedorViewModel = await ObterFornecedorEndereco(id);
 
-            var fornecedorViewModel = await _context.FornecedorViewModel
-                .FirstOrDefaultAsync(m => m.Id == id);
             if (fornecedorViewModel == null)
-            {
                 return NotFound();
-            }
-
+        
             return View(fornecedorViewModel);
         }
 
@@ -148,21 +115,30 @@ namespace DevIO.App.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
-            var fornecedorViewModel = await _context.FornecedorViewModel.FindAsync(id);
-            _context.FornecedorViewModel.Remove(fornecedorViewModel);
-            await _context.SaveChangesAsync();
+            var fornecedorViewModel = await ObterFornecedorEndereco(id);
+
+            if (fornecedorViewModel == null)
+                return NotFound();
+
+            var fornecedor = _mapper.Map<Fornecedor>(fornecedorViewModel);
+            await _fornecedorRepository.Remover(fornecedor.Id);
+
+            //_context.FornecedorViewModel.Remove(fornecedorViewModel);
+            //await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool FornecedorViewModelExists(Guid id)
-        {
-            return _context.FornecedorViewModel.Any(e => e.Id == id);
-        }
+        /* Métodos extras para facilitar nossa vida */
 
         //método que retorna o Fornecedor + Endereço já mapeado para viewModel -> para não precisarmos ficar repentido o código de Map.
         private async Task<FornecedorViewModel> ObterFornecedorEndereco(Guid id)
         {
             return _mapper.Map<FornecedorViewModel>(await _fornecedorRepository.ObterFornecedorEndereco(id));
+        }
+
+        private async Task<FornecedorViewModel> ObterFornecedorProdutosEndereco(Guid id)
+        {
+            return _mapper.Map<FornecedorViewModel>(await _fornecedorRepository.ObterFornecedorProdutosEndereco(id));
         }
     }
 }

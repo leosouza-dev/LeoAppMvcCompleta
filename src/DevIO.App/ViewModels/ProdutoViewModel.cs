@@ -28,7 +28,7 @@ namespace DevIO.App.ViewModels
         public string Descricao { get; set; }
 
         //upload de imagem não pode ser do tipo string
-        //public IFormFile ImagemUpload { get; set; }
+        public IFormFile ImagemUpload { get; set; }
 
         //mas não podemos perder o campo Imagem (string)
         public string Imagem { get; set; }
@@ -43,5 +43,8 @@ namespace DevIO.App.ViewModels
         public bool Ativo { get; set; }
 
         public FornecedorViewModel Fornecedor { get; set; }
+
+        //usado para enviarmos uma lista de forncedores para quisermos editar o fornecedor.
+        public IEnumerable<FornecedorViewModel> Fornecedores;
     }
 }
