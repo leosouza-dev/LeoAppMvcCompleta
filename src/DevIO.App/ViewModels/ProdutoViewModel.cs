@@ -28,6 +28,7 @@ namespace DevIO.App.ViewModels
         public string Descricao { get; set; }
 
         //upload de imagem não pode ser do tipo string
+        [DisplayName("Imagem do Produto")]
         public IFormFile ImagemUpload { get; set; }
 
         //mas não podemos perder o campo Imagem (string)
