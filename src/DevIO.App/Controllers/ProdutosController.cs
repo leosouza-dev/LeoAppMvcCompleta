@@ -89,22 +89,41 @@ namespace DevIO.App.Controllers
             return View(produtoViewModel);
         }
 
-        // POST: Produtos/Edit/5
-        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
-        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(Guid id, ProdutoViewModel produtoViewModel)
         {
             if (id != produtoViewModel.Id)
-            {
                 return NotFound();
-            }
+
+            //populando a viewmodel novamente -> dados que não foram passados via formulário (campo)
+            var produtoAtualizacao = await ObterProduto(id);
+            produtoViewModel.Fornecedor = produtoAtualizacao.Fornecedor; //não recebemos do post, apenas estava sendo exibida
+            produtoViewModel.Imagem = produtoAtualizacao.Imagem; //não recebemos do post, apenas estava sendo exibida
 
             if (!ModelState.IsValid)
                 return View(produtoViewModel);
 
-            await _produtoRepository.Atualizar(_mapper.Map<Produto>(produtoViewModel));
+            //checar se a imagem foi alterada/preenchida
+            if(produtoViewModel.ImagemUpload != null)
+            {
+                var imgPrefixo = Guid.NewGuid() + "_"; //garante que a imagem seja única (unico nome)
+                if (!await UploadArquivo(produtoViewModel.ImagemUpload, imgPrefixo))
+                {
+                    return View(produtoViewModel);
+                }
+
+                //checar isso - produtoAtualizacao ou produtoViewModel;
+                produtoAtualizacao.Imagem = imgPrefixo + produtoViewModel.ImagemUpload.FileName;
+            }
+
+            //evita a edição de campos que não queiramos
+            produtoAtualizacao.Nome = produtoViewModel.Nome;
+            produtoAtualizacao.Descricao = produtoViewModel.Descricao;
+            produtoAtualizacao.Valor = produtoViewModel.Valor;
+            produtoAtualizacao.Ativo = produtoViewModel.Ativo;
+
+            await _produtoRepository.Atualizar(_mapper.Map<Produto>(produtoAtualizacao));
             return RedirectToAction(nameof(Index));
             //ViewData["FornecedorId"] = new SelectList(_context.Set<FornecedorViewModel>(), "Id", "Documento", produtoViewModel.FornecedorId);    
         }
